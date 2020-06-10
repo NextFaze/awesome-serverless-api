@@ -1,5 +1,15 @@
 import { Construct } from '@aws-cdk/core';
-import { UserPool, UserPoolClient } from '@aws-cdk/aws-cognito';
+import {
+  UserPool,
+  UserPoolClient,
+  OAuthScope,
+  UserPoolDomain,
+  UserPoolClientIdentityProvider,
+} from '@aws-cdk/aws-cognito';
+
+interface CognitoProps {
+  hostedAuthDomainPrefix: string;
+}
 
 /**
  * @description This Construct creates all the resources required to enable
@@ -10,27 +20,38 @@ import { UserPool, UserPoolClient } from '@aws-cdk/aws-cognito';
  * just to keep the code simple and easy to understand.
  */
 export class Cognito extends Construct {
-  constructor(scope: Construct, id: string) {
+  constructor(
+    scope: Construct,
+    id: string,
+    { hostedAuthDomainPrefix }: CognitoProps,
+  ) {
     super(scope, id);
 
-    // create user directory to store user and their sessions
+    // configure user directory to store user and their sessions
     const userPool = new UserPool(this, 'UserPool', {
       autoVerify: {
         email: true,
       },
+      standardAttributes: {
+        email: {
+          required: true,
+        },
+      },
       signInAliases: {
         email: true,
+        username: true,
         preferredUsername: true,
       },
       selfSignUpEnabled: true,
     });
 
-    // create userPoolClient for our api
-    new UserPoolClient(this, 'UserPoolClient', {
+    // configure userPoolClient for our api
+    const userPoolClient = new UserPoolClient(this, 'UserPoolClient', {
       userPool,
+      userPoolClientName: 'My Awesome App Client',
       authFlows: {
-        // for the sake of simplicity we are only adding one auth flow
         userSrp: true,
+        refreshToken: true,
       },
       oAuth: {
         flows: {
@@ -38,11 +59,19 @@ export class Cognito extends Construct {
           // see more https://oauth.net/2/grant-types/implicit/#:~:text=It%20is%20not%20recommended%20to,been%20received%20by%20the%20client.
           implicitCodeGrant: true,
         },
-        scopes: [],
-        // this is where the oauth server will redirect us after successful login
+        scopes: [OAuthScope.PROFILE, OAuthScope.COGNITO_ADMIN],
         callbackUrls: ['https://www.google.com'],
       },
+      supportedIdentityProviders: [UserPoolClientIdentityProvider.COGNITO],
       preventUserExistenceErrors: true,
+    });
+
+    // configure cognito hosted OAuth 2.0 server
+    const userPoolDomain = new UserPoolDomain(this, 'UserPoolDomain', {
+      userPool,
+      cognitoDomain: {
+        domainPrefix: hostedAuthDomainPrefix,
+      },
     });
   }
 }
