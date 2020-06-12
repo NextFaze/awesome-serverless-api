@@ -22,7 +22,7 @@ export class ApiConstruct extends Construct {
       code: Code.fromAsset('../api', {
         exclude: ['node_modules'],
       }),
-      handler: 'index.handler',
+      handler: 'src/main.api',
       runtime: Runtime.NODEJS_12_X,
       layers: [lambdaLayer],
     });
