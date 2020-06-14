@@ -9,9 +9,11 @@ export class AwesomeServerlessApiStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    new Cognito(this, 'Cognito', {
+    const cognitoResources = new Cognito(this, 'Cognito', {
       hostedAuthDomainPrefix: this.config.hostedAuthDomainPrefix,
     });
-    new ApiConstruct(this, 'ApiConstruct');
+    new ApiConstruct(this, 'ApiConstruct', {
+      userPool: cognitoResources.userPool,
+    });
   }
 }

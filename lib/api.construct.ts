@@ -4,12 +4,18 @@ import {
   LambdaRestApi,
   ApiKeySourceType,
   AuthorizationType,
-  Authorizer,
+  CfnAuthorizer,
+  CfnMethod,
 } from '@aws-cdk/aws-apigateway';
 import { Function, Code, Runtime, LayerVersion } from '@aws-cdk/aws-lambda';
+import { IUserPool } from '@aws-cdk/aws-cognito';
+
+export interface ApiConstructProps {
+  userPool: IUserPool;
+}
 
 export class ApiConstruct extends Construct {
-  constructor(scope: Construct, id: string) {
+  constructor(scope: Construct, id: string, { userPool }: ApiConstructProps) {
     super(scope, id);
 
     // pack all external deps in layer
@@ -29,6 +35,7 @@ export class ApiConstruct extends Construct {
       layers: [lambdaLayer],
     });
 
+    // TODO: Add authorizer on ANY method
     // add api resource to handle all http traffic and pass it to our handler
     const lambdaRestAPi = new LambdaRestApi(this, 'LambdaRestApi', {
       handler,
@@ -36,9 +43,6 @@ export class ApiConstruct extends Construct {
       apiKeySourceType: ApiKeySourceType.HEADER,
       defaultMethodOptions: {
         apiKeyRequired: true,
-        // we have enabled cognito authorizer to perform authentication for all incoming requests
-        authorizationType: AuthorizationType.COGNITO,
-        // WIP: add cognito
         // authorizer: cognitoAuthorizer,
       },
       deployOptions: {
@@ -51,5 +55,18 @@ export class ApiConstruct extends Construct {
     lambdaRestAPi.addUsagePlan('UsagePlan', {
       apiKey,
     });
+
+    // add cognito authorizer
+    const anyMethod = lambdaRestAPi.methods[0].node.defaultChild as CfnMethod;
+    const authorizer = new CfnAuthorizer(this, 'CognitoAuthorizer', {
+      name: 'Test_Cognito_Authorizer',
+      identitySource: 'method.request.header.Authorization',
+      providerArns: [userPool.userPoolArn],
+      restApiId: lambdaRestAPi.restApiId,
+      type: 'COGNITO_USER_POOLS',
+    });
+    lambdaRestAPi.methods[0].node.addDependency(authorizer);
+    anyMethod.addOverride('Properties.AuthorizationType', 'COGNITO_USER_POOLS');
+    anyMethod.addOverride('Properties.AuthorizerId', authorizer.ref);
   }
 }

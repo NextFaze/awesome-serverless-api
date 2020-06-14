@@ -5,6 +5,7 @@ import {
   OAuthScope,
   UserPoolDomain,
   UserPoolClientIdentityProvider,
+  IUserPool,
 } from '@aws-cdk/aws-cognito';
 
 interface CognitoProps {
@@ -20,6 +21,7 @@ interface CognitoProps {
  * just to keep the code simple and easy to understand.
  */
 export class Cognito extends Construct {
+  readonly userPool: IUserPool;
   constructor(
     scope: Construct,
     id: string,
@@ -28,7 +30,7 @@ export class Cognito extends Construct {
     super(scope, id);
 
     // configure user directory to store user and their sessions
-    const userPool = new UserPool(this, 'UserPool', {
+    this.userPool = new UserPool(this, 'UserPool', {
       autoVerify: {
         email: true,
       },
@@ -47,7 +49,7 @@ export class Cognito extends Construct {
 
     // configure userPoolClient for our api
     const userPoolClient = new UserPoolClient(this, 'UserPoolClient', {
-      userPool,
+      userPool: this.userPool,
       userPoolClientName: 'My Awesome App Client',
       authFlows: {
         userSrp: true,
@@ -68,7 +70,7 @@ export class Cognito extends Construct {
 
     // configure cognito hosted OAuth 2.0 server
     const userPoolDomain = new UserPoolDomain(this, 'UserPoolDomain', {
-      userPool,
+      userPool: this.userPool,
       cognitoDomain: {
         domainPrefix: hostedAuthDomainPrefix,
       },
