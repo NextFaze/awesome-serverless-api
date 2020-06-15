@@ -1,11 +1,11 @@
 import { Construct } from '@aws-cdk/core';
 import { resolve } from 'path';
 import {
-  LambdaRestApi,
-  ApiKeySourceType,
   AuthorizationType,
   CfnAuthorizer,
   CfnMethod,
+  RestApi,
+  LambdaIntegration,
 } from '@aws-cdk/aws-apigateway';
 import { Function, Code, Runtime, LayerVersion } from '@aws-cdk/aws-lambda';
 import { IUserPool } from '@aws-cdk/aws-cognito';
@@ -35,38 +35,41 @@ export class ApiConstruct extends Construct {
       layers: [lambdaLayer],
     });
 
-    // TODO: Add authorizer on ANY method
     // add api resource to handle all http traffic and pass it to our handler
-    const lambdaRestAPi = new LambdaRestApi(this, 'LambdaRestApi', {
-      handler,
+    const api = new RestApi(this, 'Api', {
       deploy: true,
-      apiKeySourceType: ApiKeySourceType.HEADER,
       defaultMethodOptions: {
         apiKeyRequired: true,
-        // authorizer: cognitoAuthorizer,
       },
       deployOptions: {
         stageName: 'v1',
       },
     });
 
+    // add proxy resource to handle all api requests
+    const apiResource = api.root.addProxy({
+      defaultIntegration: new LambdaIntegration(handler),
+      defaultMethodOptions: {
+        authorizationType: AuthorizationType.COGNITO,
+      },
+    });
+
     // add api key to enable monitoring
-    const apiKey = lambdaRestAPi.addApiKey('ApiKey');
-    lambdaRestAPi.addUsagePlan('UsagePlan', {
+    const apiKey = api.addApiKey('ApiKey');
+    api.addUsagePlan('UsagePlan', {
       apiKey,
     });
 
     // add cognito authorizer
-    const anyMethod = lambdaRestAPi.methods[0].node.defaultChild as CfnMethod;
+    const anyMethod = apiResource.anyMethod?.node.defaultChild as CfnMethod;
     const authorizer = new CfnAuthorizer(this, 'CognitoAuthorizer', {
       name: 'Test_Cognito_Authorizer',
       identitySource: 'method.request.header.Authorization',
       providerArns: [userPool.userPoolArn],
-      restApiId: lambdaRestAPi.restApiId,
+      restApiId: api.restApiId,
       type: 'COGNITO_USER_POOLS',
     });
-    lambdaRestAPi.methods[0].node.addDependency(authorizer);
-    anyMethod.addOverride('Properties.AuthorizationType', 'COGNITO_USER_POOLS');
+    anyMethod.node.addDependency(authorizer);
     anyMethod.addOverride('Properties.AuthorizerId', authorizer.ref);
   }
 }
