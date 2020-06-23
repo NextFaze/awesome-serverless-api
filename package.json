@@ -5,9 +5,6 @@
     "awesome-serverless-api": "bin/awesome-serverless-api.js"
   },
   "scripts": {
-    "build": "tsc",
-    "watch": "tsc -w",
-    "test": "jest",
     "cdk": "cdk"
   },
   "devDependencies": {
