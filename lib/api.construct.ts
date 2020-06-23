@@ -1,4 +1,5 @@
 import { Construct } from '@aws-cdk/core';
+import { Table, AttributeType, BillingMode } from '@aws-cdk/aws-dynamodb';
 import { resolve } from 'path';
 import {
   AuthorizationType,
@@ -18,6 +19,13 @@ export class ApiConstruct extends Construct {
   constructor(scope: Construct, id: string, { userPool }: ApiConstructProps) {
     super(scope, id);
 
+    // add dynamo db table to store our todo
+    const table = new Table(this, 'Table', {
+      partitionKey: { name: 'PK', type: AttributeType.STRING },
+      sortKey: { name: 'SK', type: AttributeType.STRING },
+      billingMode: BillingMode.PAY_PER_REQUEST,
+    });
+
     // pack all external deps in layer
     const lambdaLayer = new LayerVersion(this, 'HandlerLayer', {
       code: Code.fromAsset(resolve(__dirname, '../api/node_modules')),
@@ -33,7 +41,11 @@ export class ApiConstruct extends Construct {
       handler: 'src/main.api',
       runtime: Runtime.NODEJS_12_X,
       layers: [lambdaLayer],
+      environment: {
+        tableName: table.tableName,
+      },
     });
+    table.grantReadWriteData(handler);
 
     // add api resource to handle all http traffic and pass it to our handler
     const api = new RestApi(this, 'Api', {
