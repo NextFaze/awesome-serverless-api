@@ -76,7 +76,7 @@ export class TodosController {
     const todoResponse = await this.dc
       .query({
         TableName: this.tableName,
-        KeyConditionExpression: 'PK = :pk AND SK BEGINS_WITH :skType',
+        KeyConditionExpression: 'PK = :pk AND  begins_with(SK, :skType)',
         ExpressionAttributeValues: {
           ':pk': `USER#${userId}`,
           ':skType': 'TODO',
