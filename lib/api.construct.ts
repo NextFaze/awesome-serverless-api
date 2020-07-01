@@ -35,13 +35,14 @@ export class ApiConstruct extends Construct {
 
     // add handler to respond to all our api requests
     const handler = new Function(this, 'Handler', {
-      code: Code.fromAsset(resolve(__dirname, '../api'), {
+      code: Code.fromAsset(resolve(__dirname, '../api/dist'), {
         exclude: ['node_modules'],
       }),
-      handler: 'src/main.api',
+      handler: 'main.api',
       runtime: Runtime.NODEJS_12_X,
       layers: [lambdaLayer],
       environment: {
+        NODE_PATH: '$NODE_PATH:/opt',
         tableName: table.tableName,
       },
     });
