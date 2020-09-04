@@ -69,8 +69,13 @@ export class ApiConstruct extends Construct {
 
     // add api key to enable monitoring
     const apiKey = api.addApiKey('ApiKey');
-    api.addUsagePlan('UsagePlan', {
+    const usagePlan = api.addUsagePlan('UsagePlan', {
       apiKey,
+      name: 'Standard',
+    });
+
+    usagePlan.addApiStage({
+      stage: api.deploymentStage,
     });
 
     // add cognito authorizer

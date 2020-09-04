@@ -107,8 +107,8 @@ export class TodosController {
         UpdateExpression:
           'SET attributes.title = :newTitle, attributes.note = :newNote',
         ExpressionAttributeValues: {
-          ':newTitle': body.title,
-          ':newNote': body.note,
+          ':newTitle': body.title || '',
+          ':newNote': body.note || '',
         },
         ReturnValues: 'UPDATED_NEW',
       })
