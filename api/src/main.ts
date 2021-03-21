@@ -16,9 +16,6 @@ const bootstrapServer = async () => {
 };
 
 export const api = async (event, context) => {
-  // use cached Nestjs server if exists or create one
-  // when lambdas are hot, they have tendency to cache runtime variables,
-  // so in this case, if we hit one of hot instance, there will be one Nestjs server already bootstrapped
   if (!cachedServer) {
     cachedServer = await bootstrapServer();
   }
