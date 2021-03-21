@@ -41,9 +41,9 @@ export class ApiConstruct extends Construct {
       proxy: false,
     });
 
-    api.root
-      .addResource("hello")
-      .addMethod("GET", new LambdaIntegration(handler));
+    const apiResource = api.root.addResource("hello")
+    apiResource.addMethod("GET", new LambdaIntegration(handler));
+    apiResource.addMethod("POST", new LambdaIntegration(handler));
 
     new CfnOutput(this, "HTTP API URL", {
       value: api.url ?? "Something went wrong with the deploy",

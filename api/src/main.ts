@@ -1,9 +1,10 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
 import * as express from 'express';
-import { createServer, proxy } from 'aws-serverless-express';
-import { ExpressAdapter } from '@nestjs/platform-express';
+
 import { Server } from 'http';
+import { createServer, proxy } from 'aws-serverless-express';
+import { NestFactory } from '@nestjs/core';
+import { ExpressAdapter } from '@nestjs/platform-express';
+import { AppModule } from './mutants/app.module';
 
 let cachedServer: Server;
 
